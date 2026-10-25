@@ -1,0 +1,16 @@
+- insert:
+    - id: runtime-env-watch
+      name: dsh-runtime-env-watch
+      config:
+        enabled: true
+        probeSeconds: 30
+        reminderMinutes: 10
+        staleMinutes: 10
+        watchFiles:
+          - package.json
+          - pnpm-lock.yaml
+          - package-lock.json
+          - yarn.lock
+          - AGENTS.md
+          - tsconfig.json
+        sectionOrder: 21
