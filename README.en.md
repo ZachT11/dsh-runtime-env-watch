@@ -6,7 +6,7 @@ A runtime-environment watchdog for **DeepSeek Harness (DSH)**: working directory
 
 > The audit text emitted by this version is Chinese; the example below is translated for readability.
 
-It targets two common long-context failures:
+It targets two common in-context failures in some large models (such as deepseekV4.1F1017):
 
 - the model runs `pwd` / `git status` / `node -v` once at the start, then assumes nothing changed;
 - the model treats the first check as permanently authoritative until a command fails.

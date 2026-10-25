@@ -4,7 +4,7 @@
 
 给 **DeepSeek Harness（DSH）** 的 AI 运行环境巡检插件：工作目录、Git 分支/HEAD/已跟踪改动、关键文件 mtime、Node/pnpm/git 版本、Shell 和平台。
 
-它解决长上下文里最常见的两类失误：
+它解决一些大模型（如 deepseekV4.1F1017）在上下文里最常见的两类失误：
 
 - 模型在会话开头跑一次 `pwd` / `git status` / `node -v`，之后默认环境没变；
 - 模型把第一次检查结果当成永久权威，直到命令失败才回头怀疑。
