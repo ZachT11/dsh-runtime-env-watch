@@ -1,0 +1,86 @@
+{
+  "checks": [
+    {
+      "id": "hardware",
+      "kind": "hardware",
+      "intervalSeconds": 15,
+      "metrics": [
+        "cpu",
+        "memory",
+        "disk",
+        "uptime"
+      ]
+    },
+    {
+      "id": "battery",
+      "kind": "hardware",
+      "intervalSeconds": 60,
+      "metrics": [
+        "battery"
+      ]
+    },
+    {
+      "id": "gpu",
+      "kind": "hardware",
+      "intervalSeconds": 15,
+      "metrics": [
+        "gpu"
+      ]
+    },
+    {
+      "id": "robot",
+      "kind": "http",
+      "intervalSeconds": 10,
+      "url": "http://192.168.1.50:8080/api/status",
+      "fields": {
+        "battery": "battery.level",
+        "mode": "mode",
+        "x": "pose.x",
+        "y": "pose.y",
+        "error": "error"
+      },
+      "expect": {
+        "battery": {
+          "min": 20
+        },
+        "error": {
+          "equals": null
+        }
+      }
+    },
+    {
+      "id": "robot-link",
+      "kind": "tcp",
+      "intervalSeconds": 5,
+      "host": "192.168.1.50",
+      "port": 8080
+    },
+    {
+      "id": "robot-camera",
+      "kind": "command",
+      "intervalSeconds": 15,
+      "command": [
+        "ssh",
+        "robot@192.168.1.50",
+        "cat /run/camera.json"
+      ],
+      "json": true,
+      "fields": {
+        "fps": "fps",
+        "online": "online"
+      },
+      "expect": {
+        "fps": {
+          "min": 5
+        }
+      }
+    },
+    {
+      "id": "state-file",
+      "kind": "file",
+      "intervalSeconds": 30,
+      "path": "runtime-status.json",
+      "minSize": 1
+    }
+  ]
+}
