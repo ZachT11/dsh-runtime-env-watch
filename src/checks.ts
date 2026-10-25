@@ -198,11 +198,17 @@ async function collectHardware(def: CheckDefinition, ctx: CheckContext): Promise
       } else if (metric === 'processes') {
         const text = await powerShell(ctx.run, ctx.cwd, 'Get-Process | Sort-Object CPU -Descending | Select-Object -First 5 Name,CPU,WorkingSet64 | ConvertTo-Json -Compress', ctx.timeoutMs, ctx.signal)
         if (text === null) errors.push('processes: PowerShell probe failed')
-        else data.processes = JSON.parse(text)
+        else {
+          const parsed = JSON.parse(text)
+          data.processes = Array.isArray(parsed) ? parsed : [parsed]
+        }
       } else if (metric === 'ports') {
         const text = await powerShell(ctx.run, ctx.cwd, 'Get-NetTCPConnection -State Listen | Select-Object -First 20 LocalAddress,LocalPort,OwningProcess | ConvertTo-Json -Compress', ctx.timeoutMs, ctx.signal)
         if (text === null) errors.push('ports: PowerShell probe failed')
-        else data.ports = JSON.parse(text)
+        else {
+          const parsed = JSON.parse(text)
+          data.ports = Array.isArray(parsed) ? parsed : [parsed]
+        }
       } else if (metric === 'temperature') {
         const text = await powerShell(ctx.run, ctx.cwd, 'Get-CimInstance -Namespace root/wmi -ClassName MSAcpi_ThermalZoneTemperature | Select-Object -First 1 CurrentTemperature | ConvertTo-Json -Compress', ctx.timeoutMs, ctx.signal)
         if (text === null) errors.push('temperature: probe failed')
@@ -332,6 +338,10 @@ export async function runCheck(def: CheckDefinition, ctx: CheckContext): Promise
 }
 
 function fingerprintData(kind: CheckKind, data: Record<string, any>): Record<string, any> {
+  if (kind === 'file') {
+    const { ageSeconds: _ageSeconds, ...stable } = data
+    return stable
+  }
   if (kind !== 'hardware') return data
   const rounded = (value: unknown, step: number) => Number.isFinite(Number(value)) ? Math.round(Number(value) / step) * step : null
   const result: Record<string, any> = {}
@@ -340,6 +350,9 @@ function fingerprintData(kind: CheckKind, data: Record<string, any>): Record<str
   if (Array.isArray(data.disk)) result.disk = data.disk.map((disk: any) => ({ path: disk.path, used: rounded(disk.usedPercent, 5) }))
   if (data.battery) result.battery = { percent: rounded(data.battery.percent, 5), charging: Boolean(data.battery.charging) }
   if (Array.isArray(data.gpu)) result.gpu = data.gpu.map((gpu: any) => ({ name: gpu.name, temp: rounded(gpu.temperatureC, 5), util: rounded(gpu.utilizationPercent, 10) }))
+  if (data.temperatureC !== undefined) result.temperature = rounded(data.temperatureC, 5)
+  if (Array.isArray(data.processes)) result.processes = data.processes.length
+  if (Array.isArray(data.ports)) result.ports = data.ports.length
   if (Array.isArray(data.errors)) result.errors = data.errors
   return result
 }
@@ -370,8 +383,8 @@ export function formatCheckState(state: CheckState, now = Date.now(), staleMinut
   const stale = staleMinutes !== undefined && age > staleMinutes * 60
   const label = state.kind === 'hardware' ? (state.id === 'hardware' ? '硬件' : '硬件·' + state.id) : state.id
   const body = state.kind === 'hardware' ? formatHardware(state.data) : formatData(state.data)
-  const status = state.ok ? '正常' : '异常'
-  return label + '：' + status + (body ? '；' + body : '') + (state.error && !state.ok ? '；' + state.error : '') + (stale ? '（数据已过期 ' + formatDuration(age) + '）' : '')
+  const status = !state.ok ? '异常' : stale ? '需刷新（数据已过期 ' + formatDuration(age) + '）' : '正常'
+  return label + '：' + status + (body ? '；' + body : '') + (state.error && !state.ok ? '；' + state.error : '')
 }
 
 export function formatStatusReport(states: CheckState[], options: { now?: Date; staleMinutes?: number; intervalSeconds?: number; configError?: string } = {}): string {
