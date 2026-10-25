@@ -53,6 +53,11 @@ dsh plugin --profile desktop add --allow-build=dsh-runtime-env-watch github:Zach
 - `--allow-build`：允许 Git 源码包执行 `prepare` 构建。
 - `--trust-lockfile`：新仓库首次发布不足 24 小时时，pnpm 的 `minimumReleaseAge` 会拦截；不接受该选项时可去掉。
 - 桌面应用 profile 是 `desktop`；`dsh web` 用 `web`。
+- 如果 pnpm 拒绝执行构建，按它打印的包键在 profile 的 `pnpm-workspace.yaml` 里加：
+  ```yaml
+  allowBuilds:
+    dsh-runtime-env-watch: true
+  ```
 
 ### 从本地 checkout 安装
 

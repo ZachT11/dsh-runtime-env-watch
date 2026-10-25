@@ -4,6 +4,8 @@ English | [中文](README.md)
 
 A runtime-environment watchdog for **DeepSeek Harness (DSH)**: working directory, Git branch/HEAD/tracked changes, key file mtimes, Node/pnpm/git versions, Shell, and platform.
 
+> The audit text emitted by this version is Chinese; the example below is translated for readability.
+
 It targets two common long-context failures:
 
 - the model runs `pwd` / `git status` / `node -v` once at the start, then assumes nothing changed;
@@ -53,6 +55,11 @@ dsh plugin --profile desktop add --allow-build=dsh-runtime-env-watch github:Zach
 - `--allow-build` lets the Git source package run its `prepare` build.
 - `--trust-lockfile` skips pnpm's `minimumReleaseAge` gate for a repository published less than 24 hours ago; drop it if your pnpm does not accept the flag.
 - The desktop app uses the `desktop` profile; `dsh web` uses `web`.
+- If pnpm refuses the build, add the package key it prints to the profile's `pnpm-workspace.yaml`:
+  ```yaml
+  allowBuilds:
+    dsh-runtime-env-watch: true
+  ```
 
 ### From a local checkout
 
