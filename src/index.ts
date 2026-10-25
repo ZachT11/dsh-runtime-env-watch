@@ -109,6 +109,7 @@ export function apply(ctx: Context, entry: Config) {
       render: (_args, value) => [{ type: 'text', text: value.text }],
     },
     async execute(args: any, exec: any) {
+      if (!entry.enabled.get()) throw new Error('runtime_env is disabled: enable runtime-env-watch in Settings → Plugins, or set enabled: true in the plugin config.')
       if (!exec.agent) throw new Error('runtime_env requires an agent Session')
       const { state, previous } = await probe(exec.agent, args?.refresh === true, exec.signal)
       const changed = previous === undefined ? true : previous.fingerprint !== state.fingerprint
