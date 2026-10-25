@@ -564,6 +564,10 @@ export class CheckScheduler {
   }
 
   async runOne(id: string, force = true): Promise<CheckState | undefined> {
+    if (!force) {
+      const existing = this.states.get(id)
+      if (existing !== undefined) return existing
+    }
     const def = this.definitions.find(item => item.id === id)
     if (!def) return undefined
     this.nextAt.set(def.id, Date.now() + this.intervalOf(def) * 1000)

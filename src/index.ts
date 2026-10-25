@@ -186,10 +186,11 @@ export function apply(ctx: Context, entry: Config) {
       const before = states.get(key)
       await scheduler.ensure()
       const { state } = await probe(exec.agent, true, exec.signal)
+      const force = args?.refresh !== false
       if (typeof args?.id === 'string' && args.id) {
-        const one = await scheduler.runOne(args.id, true)
+        const one = await scheduler.runOne(args.id, force)
         if (!one) throw new Error('unknown check id: ' + args.id)
-      } else await scheduler.runAll(true)
+      } else await scheduler.runAll(force)
       const checks = scheduler.snapshot()
       const now = new Date()
       const text = combined(state.facts, before?.facts ?? null, now)
