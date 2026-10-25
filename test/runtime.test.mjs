@@ -47,5 +47,5 @@ assert.ok(stale.includes('变化：'), 'delta audit must include a change line')
 
 const noGit = await collectRuntimeFacts(dir, { watchFiles: ['package.json'], run: async () => null })
 assert.equal(noGit.git, null)
-assert.ok(formatRuntimeAudit(noGit, { now: new Date(noGit.collectedAt) }).includes('非 Git 仓库'))
+assert.ok(formatRuntimeAudit(noGit, { now: new Date(noGit.collectedAt) }).includes('git 不可用'))
 console.log('runtime environment audit tests passed')

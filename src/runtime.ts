@@ -53,6 +53,23 @@ function parseGitStatus(text: string) {
   return { dirty: lines.length, modified, added, deleted, renamed }
 }
 
+let shellCache: { at: number; value: string } | null = null
+
+async function detectShell(run: CommandRunner, cwd: string, timeoutMs: number, signal?: AbortSignal): Promise<string> {
+  if (shellCache && Date.now() - shellCache.at < 24 * 60 * 60_000) return shellCache.value
+  let value = ''
+  for (const candidate of ['pwsh', 'powershell']) {
+    const version = await run([candidate, '-NoProfile', '-NonInteractive', '-Command', '$PSVersionTable.PSVersion.ToString()'], cwd, timeoutMs, signal)
+    if (version && /^\d+\.\d+/.test(version.trim())) {
+      value = 'PowerShell ' + version.trim()
+      break
+    }
+  }
+  if (!value) value = process.env.ComSpec || process.env.SHELL || 'unknown'
+  shellCache = { at: Date.now(), value }
+  return value
+}
+
 async function fileFacts(cwd: string, paths: string[]): Promise<RuntimeFile[]> {
   const seen = new Set<string>()
   const result: RuntimeFile[] = []
@@ -72,10 +89,11 @@ async function fileFacts(cwd: string, paths: string[]): Promise<RuntimeFile[]> {
 export async function collectRuntimeFacts(cwd: string, options: RuntimeOptions): Promise<RuntimeFacts> {
   const timeoutMs = options.timeoutMs ?? 4_000
   const run = options.run
-  const [gitVersion, pnpm, files] = await Promise.all([
+  const [gitVersion, pnpm, files, shell] = await Promise.all([
     run(['git', '--version'], cwd, timeoutMs, options.signal),
     packageManager(cwd),
     fileFacts(cwd, options.watchFiles),
+    detectShell(run, cwd, timeoutMs, options.signal),
   ])
   let git: RuntimeGit | null = null
   const inside = await run(['git', 'rev-parse', '--is-inside-work-tree'], cwd, timeoutMs, options.signal)
@@ -93,7 +111,7 @@ export async function collectRuntimeFacts(cwd: string, options: RuntimeOptions):
     platform: os.type(),
     release: os.release(),
     arch: process.arch,
-    shell: process.env.ComSpec || process.env.SHELL || 'unknown',
+    shell,
     node: process.version,
     gitVersion,
     pnpm,
@@ -138,8 +156,9 @@ function ageText(ms: number): string {
   return hours + ' 小时'
 }
 
-function gitLine(git: RuntimeGit | null): string {
-  if (git === null) return '非 Git 仓库，或当前目录不可用'
+function gitLine(git: RuntimeGit | null, gitVersion: string | null): string {
+  if (gitVersion === null) return 'git 不可用（未安装或不在 PATH）'
+  if (git === null) return '当前目录不是 Git 仓库（git 可用）'
   const state = git.status === 'timeout' ? '状态读取超时' : git.dirty === 0 ? '工作区干净' : git.dirty + ' 个已跟踪改动'
   return git.branch + ' @ ' + git.head + '；' + state + (git.dirty > 0 ? '（修改 ' + git.modified + ' / 新增 ' + git.added + ' / 删除 ' + git.deleted + '）' : '')
 }
@@ -182,7 +201,7 @@ export function formatRuntimeAudit(facts: RuntimeFacts, options: AuditOptions = 
     '工作目录：' + facts.cwd,
     '平台：' + facts.platform + ' ' + facts.release + '（' + facts.arch + '） / Node ' + facts.node + (facts.pnpm ? ' / ' + facts.pnpm : '') + (facts.gitVersion ? ' / ' + facts.gitVersion : ''),
     'Shell：' + facts.shell,
-    'Git：' + gitLine(facts.git),
+    'Git：' + gitLine(facts.git, facts.gitVersion),
     '关键文件：' + (facts.files.length === 0 ? '未配置' : facts.files.map(file => file.exists ? file.path + ' ' + clock(file.mtimeMs) : file.path + ' 不存在').join('；')),
   ]
   const changes = describeRuntimeChanges(options.previous ?? null, facts)
