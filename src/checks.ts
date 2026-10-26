@@ -577,12 +577,12 @@ export class CheckScheduler {
   }
 
   async runOne(id: string, force = true): Promise<CheckState | undefined> {
+    const def = this.definitions.find(item => item.id === id)
+    if (!def) return undefined
     if (!force) {
       const existing = this.states.get(id)
       if (existing !== undefined) return existing
     }
-    const def = this.definitions.find(item => item.id === id)
-    if (!def) return undefined
     this.nextAt.set(def.id, Date.now() + this.intervalOf(def) * 1000)
     const state = await runCheck(def, { cwd: this.options.baseDir, run: this.options.run, timeoutMs: Math.min(15_000, this.intervalOf(def) * 1000) })
     this.states.set(def.id, state)
