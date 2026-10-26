@@ -66,7 +66,7 @@ These use Node `os` / `fs.statfs` and need no PowerShell.
 
 Checks live in `runtime-checks.json` (path controlled by `checksFile`, relative to the workspace by default). It is plain JSON, hot-reloaded, and **must not be committed with secrets** — the repository ignores `runtime-checks.json`.
 
-See [runtime-checks.example.json](runtime-checks.example.json).
+See [runtime-checks.example.json](runtime-checks.example.json). The `battery`, `gpu`, and `robot` entries require the actual hardware or service; remove the checks/metrics you do not have.
 
 Minimal hardware example:
 

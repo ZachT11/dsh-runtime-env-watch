@@ -66,7 +66,7 @@ dsh plugin --profile desktop remove dsh-runtime-env-watch
 
 检查项定义在 `runtime-checks.json`，路径由 `checksFile` 控制，默认相对于当前 workspace。它是普通 JSON，支持热加载；**不要提交带密钥的实际配置**，仓库已把 `runtime-checks.json` 加进 `.gitignore`。
 
-完整样例见 [runtime-checks.example.json](runtime-checks.example.json)。
+完整样例见 [runtime-checks.example.json](runtime-checks.example.json)。示例里的 `battery`、`gpu`、`robot` 需要机器上真的有对应设备或服务；没有就删掉对应的 check 或 metrics。
 
 最小硬件示例：
 
